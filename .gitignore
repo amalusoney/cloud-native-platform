@@ -1,0 +1,30 @@
+﻿# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+
+# Keys and Secrets
+*.pem
+*.key
+*.pub
+.env*
+id_rsa*
+
+# OS & Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Build artifacts
+bin/
+obj/
+target/
+dist/
+node_modules/
+__pycache__/
+*.pyc
