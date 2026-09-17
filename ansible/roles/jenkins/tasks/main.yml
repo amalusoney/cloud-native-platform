@@ -1,0 +1,140 @@
+---
+- name: Install OpenJDK 21 and fontconfig (required by latest Jenkins)
+  ansible.builtin.apt:
+    name:
+      - openjdk-21-jdk-headless
+      - fontconfig
+    state: present
+    update_cache: yes
+
+- name: Set Java 21 as the system default
+  ansible.builtin.alternatives:
+    name: java
+    path: /usr/lib/jvm/java-21-openjdk-amd64/bin/java
+
+- name: Check if swapfile exists
+  ansible.builtin.stat:
+    path: /swapfile
+  register: swap_stat
+
+- name: Create 2GB swapfile for t3.micro stability
+  ansible.builtin.command: fallocate -l 2G /swapfile
+  when: not swap_stat.stat.exists
+
+- name: Set permissions on swapfile
+  ansible.builtin.file:
+    path: /swapfile
+    mode: '0600'
+  when: not swap_stat.stat.exists
+
+- name: Format swapfile
+  ansible.builtin.command: mkswap /swapfile
+  when: not swap_stat.stat.exists
+
+- name: Enable swapfile
+  ansible.builtin.command: swapon /swapfile
+  when: not swap_stat.stat.exists
+
+- name: Clean up old Jenkins repository artifacts
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /etc/apt/sources.list.d/jenkins.list
+    - /etc/apt/trusted.gpg.d/jenkins.gpg
+    - /etc/apt/trusted.gpg.d/jenkins.asc
+    - /usr/share/keyrings/jenkins-keyring.asc
+    - /usr/share/keyrings/jenkins-keyring.gpg
+    - /tmp/jenkins-key.asc
+
+- name: Write official Jenkins signing key 7198F4B714ABFC68
+  ansible.builtin.copy:
+    dest: /tmp/jenkins-key.asc
+    mode: '0644'
+    content: |
+      -----BEGIN PGP PUBLIC KEY BLOCK-----
+      Version: Hockeypuck 2.2
+
+      xsFNBGlJRoMBEADGTw4Jms5rD1Wd0evqpTkNBgAIvCzvsjgGXHevmNIsDmm/niiE
+      gKJlrl73T9d8GZeoacsAqwGTIq29ZA1jEt1lUZ8YkVxD3VxoL0RBhgMcy3qhiu37
+      mQN1mzuItob8P2pft5pPqCWQDojXRpnMB/BTHgbtIH3i4chKVLJoCEX/Gw7abDbj
+      cUpoKMTByd0+Zv2OBtdm7ZOYXHObPmSqRoiYNiCsW3mZRsgN1LkwTl5IwJQ7Xpj8
+      9J4DK1Y6Fuyxi+QTbZk9Z3inrTx3pbARPd91MylIsOtuXkUFNQkA/ZWnKHTFgWQA
+      qx//KrsCKLe6r3+CQ4/1R4F7jHjBB01qHrxofEzGo0LB/+QNwf1ISqD7piw20IMt
+      vhlOqdsF2MQQAeyg8fv4nuLglI9ueh4T5FJabp6oL0QDozx1toa5Q58n0nX8gSBq
+      3VTd8FkzTTsaihyypWmzbdVPwAAfXhRh7sNAUvALkq4vj/EWjPruQElWyP8DwmiC
+      Aq8iduFb66oN58vlT1rf3z/jJH3FeByVEHEymz4E9rhBN1oOUQ++ONqCMOZHwnpY
+      K549A+mHrK12RDQTYjgbi9BH2ktPqPUE37rZDoGN9hzZ9dqG8dMEEz5qVMzsGhuw
+      nm1d86yQRUzscHwgPELc7xiIuV3taLf2KI4qSHTDmq6nRFxcgKI2LGFfcwARAQAB
+      zTJKZW5raW5zIFByb2plY3QgPGplbmtpbnNjaS1ib2FyZEBnb29nbGVncm91cHMu
+      Y29tPsLBlwQTAQgAQRYhBF44bq21XwFQTK6Lz3GY9LcUq/xoBQJpSUaDAhsDBQkF
+      o5qABQsJCAcCAiICBhUKCQgLAgQWAgMBAh4HAheAAAoJEHGY9LcUq/xouboP/1Zd
+      KxZXkTj20jnBn8MJ9scr17wzGLy2/EaAelbfeIYmsWJ6A7ZuuUw/41dUbTuI3k3D
+      Ta1Ft0oO5K63sJqvTQzUdas6x3HMsjYSo+YtbRZnMmR/KO4//5Lewm3LPQnCV662
+      8ZI73T22msQAbyxa8do56dmBT4N/NO6oGFZI6JBFnkiIlXmKDzm3aiEZi//piN3X
+      PZgtu8wHqpFleJXUbCpk8Db69xTjdXhnFpaYg29VrzvD/0jBEZE47Bekrl6YgjJ8
+      CKyhaPWZfxYxNeuVRTn+yxlAcDc8o9tboSKnlZ8HSOBPbf36qmLKbD4rPQmTAVgJ
+      hwBY2mxDUT5hTVom25KeyueIyN4l6OZEoLxcq5GxN85RkU2Zfq1jodpnm/PnF47Y
+      7qS4zu8bOOeUCFpJXG3kDYo34tkFKk5CT8PJLHdjgLWGvhQeL95ytPvrTLkEj4yk
+      6SXHH4EcKimgi0c/zotnzv997kGCpoMZoeIXpkhrTJoZvSQqFpeCamFRwl/AfM/l
+      ppyH905Cm/GcB+W0hQqTsA0wm+6ZQn4fAR/rhqRk4Ka1TuX2ow3OQKlyoA4EgvdI
+      41MQEw4y9spjH2RgyJpOAgIagidECrFJbqNcyzHUZUxcD7fKMRaiv5LepxVLXZ0/
+      XDDBGd3AXh6nv2BTDhoE+ZI1suWZAMwvxyoFDDFO
+      =qVTs
+      -----END PGP PUBLIC KEY BLOCK-----
+
+- name: De-armor key into system keyring
+  ansible.builtin.shell: |
+    gpg --dearmor --yes -o /usr/share/keyrings/jenkins-keyring.gpg /tmp/jenkins-key.asc
+    chmod 644 /usr/share/keyrings/jenkins-keyring.gpg
+    cp /usr/share/keyrings/jenkins-keyring.gpg /etc/apt/trusted.gpg.d/jenkins.gpg
+
+- name: Configure Jenkins repository source
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/jenkins.list
+    content: "deb [signed-by=/usr/share/keyrings/jenkins-keyring.gpg] https://pkg.jenkins.io/debian-stable binary/\n"
+    mode: '0644'
+
+- name: Update apt cache and install Jenkins LTS
+  ansible.builtin.apt:
+    name: jenkins
+    state: present
+    update_cache: yes
+
+- name: Create systemd override directory for Jenkins
+  ansible.builtin.file:
+    path: /etc/systemd/system/jenkins.service.d
+    state: directory
+    mode: '0755'
+
+- name: Configure Jenkins JVM memory parameters for t3.micro
+  ansible.builtin.copy:
+    dest: /etc/systemd/system/jenkins.service.d/override.conf
+    mode: '0644'
+    content: |
+      [Service]
+      Environment="JAVA_OPTS=-Djava.awt.headless=true -Xms128m -Xmx512m -XX:+UseG1GC"
+  notify:
+    - Reload systemd
+    - Restart jenkins
+
+- name: Add jenkins service user to docker group (allows Jenkins to run Docker builds)
+  ansible.builtin.user:
+    name: jenkins
+    groups: docker
+    append: yes
+  notify: Restart jenkins
+
+- name: Ensure Jenkins service is running and enabled on boot
+  ansible.builtin.service:
+    name: jenkins
+    state: started
+    enabled: yes
+
+- name: Wait for Jenkins Web UI to become responsive on port 8080
+  ansible.builtin.wait_for:
+    host: 127.0.0.1
+    port: 8080
+    delay: 15
+    timeout: 300
+    state: started

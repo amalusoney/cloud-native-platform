@@ -1,0 +1,38 @@
+---
+- name: Configure and Harden Jenkins Controller Host
+  hosts: jenkins_servers
+  become: true
+  gather_facts: true
+
+  pre_tasks:
+    - name: Clean up broken apt sources from previous failed runs
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/apt/sources.list.d/jenkins.list
+        - /etc/apt/trusted.gpg.d/jenkins.gpg
+        - /etc/apt/trusted.gpg.d/jenkins.asc
+
+  roles:
+    - common
+    - docker
+    - jenkins
+    - node_exporter
+
+  post_tasks:
+    - name: Display initial Jenkins admin password
+      ansible.builtin.slurp:
+        src: /var/lib/jenkins/secrets/initialAdminPassword
+      register: jenkins_admin_password_encoded
+      ignore_errors: true
+
+    - name: Print Jenkins Setup Information
+      ansible.builtin.debug:
+        msg:
+          - "=========================================================="
+          - " Jenkins Controller Configuration Complete!"
+          - " Web UI: http://{{ ansible_host }}:8080"
+          - " Node Exporter: http://{{ ansible_host }}:9100/metrics"
+          - " Initial Admin Password: {{ jenkins_admin_password_encoded.content | default('') | b64decode | trim }}"
+          - "=========================================================="

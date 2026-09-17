@@ -1,0 +1,80 @@
+---
+- name: Update apt repository cache
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install foundational packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - wget
+      - gnupg
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - htop
+      - net-tools
+      - ufw
+      - git
+      - unzip
+    state: present
+
+# --- Security Hardening ---
+
+- name: Enforce key-based authentication in SSH (disable password login)
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    state: present
+  notify: Restart sshd
+
+- name: Disable root login via SSH password
+  ansible.builtin.lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PermitRootLogin'
+    line: 'PermitRootLogin prohibit-password'
+    state: present
+  notify: Restart sshd
+
+- name: Configure UFW default incoming policy to deny
+  community.general.ufw:
+    direction: incoming
+    default: deny
+
+- name: Configure UFW default outgoing policy to allow
+  community.general.ufw:
+    direction: outgoing
+    default: allow
+
+- name: Allow SSH through UFW firewall
+  community.general.ufw:
+    rule: allow
+    port: '22'
+    proto: tcp
+
+- name: Allow Jenkins Web UI through UFW firewall
+  community.general.ufw:
+    rule: allow
+    port: '8080'
+    proto: tcp
+
+- name: Allow Prometheus Node Exporter through UFW firewall
+  community.general.ufw:
+    rule: allow
+    port: '9100'
+    proto: tcp
+
+- name: Enable UFW firewall
+  community.general.ufw:
+    state: enabled
+
+# --- System Tuning ---
+
+- name: Configure file descriptor limits for high concurrency
+  ansible.builtin.pam_limits:
+    domain: '*'
+    limit_type: '-'
+    limit_item: nofile
+    value: '65536'
