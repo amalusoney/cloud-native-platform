@@ -44,3 +44,11 @@ module "eks" {
   private_subnet_ids  = module.networking.private_subnet_ids
   node_instance_types = ["t3.micro"]
 }
+
+# 5. Amazon ECR Module (Container Registry)
+module "ecr" {
+  source          = "../../modules/ecr"
+  repository_name = "cloud-native-app"
+  environment     = var.environment
+}
+

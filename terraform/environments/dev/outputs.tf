@@ -1,4 +1,4 @@
-﻿output "vpc_id" {
+output "vpc_id" {
   description = "VPC ID"
   value       = module.networking.vpc_id
 }
@@ -22,3 +22,9 @@ output "configure_kubectl_command" {
   description = "Command to connect your local kubectl to the EKS cluster"
   value       = "aws eks update-kubeconfig --region us-east-1 --name ${module.eks.cluster_name}"
 }
+
+output "ecr_repository_url" {
+  description = "The URL of the Amazon ECR repository"
+  value       = module.ecr.repository_url
+}
+
