@@ -138,3 +138,18 @@
     delay: 15
     timeout: 300
     state: started
+
+- name: Install Python3 venv and build tools for Jenkins pipeline testing
+  ansible.builtin.apt:
+    name:
+      - python3-venv
+      - python3-pip
+      - curl
+    state: present
+
+- name: Download official kubectl binary (v1.31.0) for EKS deployments
+  ansible.builtin.get_url:
+    url: "https://dl.k8s.io/release/v1.31.0/bin/linux/amd64/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+
