@@ -12,7 +12,7 @@ spec:
   - name: cloud-native-app.rules
     rules:
     - alert: CloudNativeAppPodRestart
-      expr: increase(kube_pod_container_status_restarts_total{container="cloud-native-app"}[2m]) > 0
+      expr: increase(kube_pod_container_status_restarts_total{container="cloud-native-app"}[15m]) > 0
       for: 0m
       labels:
         severity: warning
