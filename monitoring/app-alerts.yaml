@@ -1,0 +1,32 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: cloud-native-app-alerts
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    release: prometheus-stack
+    app: cloud-native-app
+spec:
+  groups:
+  - name: cloud-native-app.rules
+    rules:
+    - alert: CloudNativeAppPodRestart
+      expr: increase(kube_pod_container_status_restarts_total{container="cloud-native-app"}[2m]) > 0
+      for: 0m
+      labels:
+        severity: warning
+        component: backend
+      annotations:
+        summary: "Cloud-Native Application Pod Restarted"
+        description: "Pod {{ $labels.pod }} has restarted {{ $value }} time(s) in the last 2 minutes."
+
+    - alert: CloudNativeAppHighCPU
+      expr: sum(node_namespace_pod_container:container_cpu_usage_seconds_total:sum_irate{container="cloud-native-app"}) by (pod) > 0.05
+      for: 20s
+      labels:
+        severity: critical
+        component: backend
+      annotations:
+        summary: "Cloud-Native Application High CPU Load"
+        description: "Pod {{ $labels.pod }} CPU utilization is running above 50m limit."

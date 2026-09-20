@@ -1,0 +1,112 @@
+# ==============================================================================
+# Lightweight kube-prometheus-stack Values for AWS EKS (t3.micro Optimized)
+# ==============================================================================
+
+# Core Prometheus Operator (Bypass certgen admission webhook job)
+prometheusOperator:
+  enabled: true
+  admissionWebhooks:
+    enabled: false
+  resources:
+    requests:
+      cpu: 20m
+      memory: 60Mi
+    limits:
+      cpu: 100m
+      memory: 150Mi
+
+# Prometheus Server Instance
+prometheus:
+  enabled: true
+  prometheusSpec:
+    replicas: 1
+    retention: 6h
+    scrapeInterval: 15s
+    evaluationInterval: 15s
+    ruleSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    resources:
+      requests:
+        cpu: 30m
+        memory: 120Mi
+      limits:
+        cpu: 150m
+        memory: 200Mi
+    storageSpec: {}
+
+# Alertmanager Instance
+alertmanager:
+  enabled: true
+  alertmanagerSpec:
+    replicas: 1
+    resources:
+      requests:
+        cpu: 15m
+        memory: 40Mi
+      limits:
+        cpu: 50m
+        memory: 80Mi
+    storage: {}
+
+# Grafana Dashboard UI (Single container, sidecars disabled for memory efficiency)
+grafana:
+  enabled: true
+  adminPassword: "admin"
+  sidecar:
+    dashboards:
+      enabled: false
+    datasources:
+      enabled: false
+  additionalDataSources:
+    - name: Prometheus
+      type: prometheus
+      url: http://prometheus-stack-kube-prom-prometheus.monitoring.svc.cluster.local:9090
+      access: proxy
+      isDefault: true
+  resources:
+    requests:
+      cpu: 30m
+      memory: 100Mi
+    limits:
+      cpu: 300m
+      memory: 350Mi
+  livenessProbe:
+    initialDelaySeconds: 120
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 10
+  readinessProbe:
+    initialDelaySeconds: 60
+    periodSeconds: 15
+    timeoutSeconds: 5
+    failureThreshold: 5
+  persistence:
+    enabled: false
+  service:
+    type: ClusterIP
+
+# Disable DaemonSet node-exporter to conserve ENI pod slots on t3.micro
+nodeExporter:
+  enabled: false
+
+# Kubernetes State Metrics Collector
+kube-state-metrics:
+  enabled: true
+  resources:
+    requests:
+      cpu: 15m
+      memory: 30Mi
+    limits:
+      cpu: 50m
+      memory: 60Mi
+
+# Disable control plane scraping (EKS managed)
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeEtcd:
+  enabled: false
+kubeProxy:
+  enabled: false
