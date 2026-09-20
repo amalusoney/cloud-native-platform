@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloud-native-app-config
+  namespace: default
+  labels:
+    app: cloud-native-app
+data:
+  ENVIRONMENT: "production-eks"
+  APP_NAME: "cloud-native-task-api"
+  PORT: "8000"
+  LOG_LEVEL: "INFO"

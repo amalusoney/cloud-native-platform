@@ -70,10 +70,39 @@ def root():
         "documentation": "/docs"
     }
 
+# Global flag for K8s self-healing / liveness probe experiments
+_is_healthy = True
+
 @app.get("/health", tags=["Health"])
 def health():
     """Liveness & Readiness probe endpoint for Kubernetes / Docker."""
+    if not _is_healthy:
+        raise HTTPException(status_code=500, detail="Simulated container failure for K8s self-healing test")
     return {"status": "healthy", "database": "connected"}
+
+@app.post("/health/fail", tags=["Health"])
+def fail_health():
+    """Deliberately fail health checks to demonstrate Kubelet probe recovery."""
+    global _is_healthy
+    _is_healthy = False
+    return {"status": "unhealthy", "message": "Health probe is now returning 500"}
+
+@app.post("/health/recover", tags=["Health"])
+def recover_health():
+    """Restore health check status."""
+    global _is_healthy
+    _is_healthy = True
+    return {"status": "healthy", "message": "Health probe restored to 200"}
+
+@app.get("/stress", tags=["Health"])
+def stress_cpu(duration: int = 5):
+    """Simulate CPU load for Horizontal Pod Autoscaler (HPA) testing."""
+    import time
+    end_time = time.time() + duration
+    while time.time() < end_time:
+        _ = 3.14159 * 2.71828 * 999999
+    return {"status": "stress_complete", "duration_seconds": duration}
+
 
 @app.get("/api/v1/tasks", response_model=List[TaskResponse], tags=["Tasks"])
 def list_tasks(db: Session = Depends(get_db)):

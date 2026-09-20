@@ -1,4 +1,4 @@
-﻿# Terraform
+# Terraform
 **/.terraform/*
 *.tfstate
 *.tfstate.*
@@ -28,3 +28,4 @@ dist/
 node_modules/
 __pycache__/
 *.pyc
+*.db

@@ -21,9 +21,11 @@ spec:
         imagePullPolicy: Always
         ports:
         - containerPort: 8000
-        env:
-        - name: ENVIRONMENT
-          value: "production-eks"
+        envFrom:
+        - configMapRef:
+            name: cloud-native-app-config
+        - secretRef:
+            name: cloud-native-app-secret
         resources:
           requests:
             cpu: "50m"

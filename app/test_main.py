@@ -18,6 +18,31 @@ def test_health_endpoint():
     assert data["status"] == "healthy"
     assert data["database"] == "connected"
 
+def test_health_failure_and_recovery():
+    # Fail health check
+    fail_res = client.post("/health/fail")
+    assert fail_res.status_code == 200
+    assert fail_res.json()["status"] == "unhealthy"
+
+    # Verify health endpoint returns 500
+    health_res = client.get("/health")
+    assert health_res.status_code == 500
+
+    # Recover health check
+    rec_res = client.post("/health/recover")
+    assert rec_res.status_code == 200
+    assert rec_res.json()["status"] == "healthy"
+
+    # Verify health endpoint is back to 200
+    health_res_after = client.get("/health")
+    assert health_res_after.status_code == 200
+
+def test_stress_endpoint():
+    response = client.get("/stress?duration=1")
+    assert response.status_code == 200
+    assert response.json()["status"] == "stress_complete"
+
+
 def test_create_and_get_task():
     # Create task
     payload = {"title": "Test CI/CD Pipeline", "description": "Phase 4 Automated Verification"}
